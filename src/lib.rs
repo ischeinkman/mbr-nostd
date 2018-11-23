@@ -82,7 +82,7 @@ pub struct MasterBootRecord {
 const BUFFER_SIZE: usize = 512;
 const TABLE_OFFSET: usize = 446;
 const ENTRY_SIZE: usize = 16;
-const SUFFIX_BYTES: [u8; 2] = [0xff, 0xaa];
+const SUFFIX_BYTES: [u8; 2] = [0x55, 0xaa];
 const MAX_ENTRIES: usize = (BUFFER_SIZE - TABLE_OFFSET - 2) / ENTRY_SIZE;
 
 impl MasterBootRecord {
