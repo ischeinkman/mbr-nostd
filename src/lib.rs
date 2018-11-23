@@ -3,6 +3,8 @@
 extern crate byteorder;
 use byteorder::{ByteOrder, LittleEndian};
 
+mod error;
+pub use error::{MbrError, ErrorCause};
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum PartitionType {
     Unused,
@@ -87,16 +89,16 @@ impl MasterBootRecord {
     pub fn from_bytes<T: AsRef<[u8]>>(bytes: &T) -> Result<MasterBootRecord, MbrError> {
         let buffer: &[u8] = bytes.as_ref();
         if buffer.len() < BUFFER_SIZE {
-            return Err(MbrError::from_cause(ErrorCause::BufferWrongSizeError));
+            return Err(MbrError::from_cause(ErrorCause::BufferWrongSizeError{expected : BUFFER_SIZE, actual : buffer.len()}));
         } else if buffer[BUFFER_SIZE - SUFFIX_BYTES.len()..BUFFER_SIZE] != SUFFIX_BYTES[..] {
-            return Err(MbrError::from_cause(ErrorCause::InvalidMBRError));
+            return Err(MbrError::from_cause(ErrorCause::InvalidMBRSuffix{actual : [buffer[BUFFER_SIZE - 2], buffer[BUFFER_SIZE -1]]}));
         }
         let mut entries = [PartitionTableEntry::empty(); MAX_ENTRIES];
         for idx in 0..MAX_ENTRIES {
             let offset = TABLE_OFFSET + idx * ENTRY_SIZE;
             let partition_type = from_mbr_tag_byte(buffer[offset + 4]);
-            if let PartitionType::Unknown(_) = partition_type {
-                return Err(MbrError::from_cause(ErrorCause::UnsupportedPartitionError));
+            if let PartitionType::Unknown(c) = partition_type {
+                return Err(MbrError::from_cause(ErrorCause::UnsupportedPartitionError { tag : c}));
             }
             let lba = LittleEndian::read_u32(&buffer[offset + 8..]);
             let len = LittleEndian::read_u32(&buffer[offset + 12..]);
@@ -108,7 +110,7 @@ impl MasterBootRecord {
     pub fn serialize<T: AsMut<[u8]>>(&self, buffer: &mut T) -> Result<usize, MbrError> {
         let buffer: &mut [u8] = buffer.as_mut();
         if buffer.len() < BUFFER_SIZE {
-            return Err(MbrError::from_cause(ErrorCause::BufferWrongSizeError));
+            return Err(MbrError::from_cause(ErrorCause::BufferWrongSizeError{expected : BUFFER_SIZE, actual : buffer.len()}));
         }
         {
             let suffix: &mut [u8] = &mut buffer[BUFFER_SIZE - SUFFIX_BYTES.len()..BUFFER_SIZE];
@@ -143,22 +145,4 @@ impl PartitionTable for MasterBootRecord {
     fn partition_table_entries(&self) -> &[PartitionTableEntry] {
         &self.entries[..]
     }
-}
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-pub struct MbrError {
-    cause: ErrorCause,
-}
-
-impl MbrError {
-    pub fn from_cause(cause: ErrorCause) -> MbrError {
-        MbrError { cause }
-    }
-}
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-pub enum ErrorCause {
-    UnsupportedPartitionError,
-    InvalidMBRError,
-    BufferWrongSizeError,
 }
