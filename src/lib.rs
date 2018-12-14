@@ -9,7 +9,7 @@ pub use error::{MbrError, ErrorCause};
 mod partitions;
 pub use partitions::*;
 
-
+/// A struct representing an MBR partition table. 
 pub struct MasterBootRecord {
     entries: [PartitionTableEntry; MAX_ENTRIES],
 }
@@ -21,6 +21,13 @@ const SUFFIX_BYTES: [u8; 2] = [0x55, 0xaa];
 const MAX_ENTRIES: usize = (BUFFER_SIZE - TABLE_OFFSET - 2) / ENTRY_SIZE;
 
 impl MasterBootRecord {
+
+    /// Parses the MBR table from a raw byte buffer. 
+    /// 
+    /// Throws an error in the following cases:
+    /// * `BufferWrongSizeError` if `bytes.len()` is less than 512
+    /// * `InvalidMBRSuffix` if the final 2 bytes in `bytes` are not `[0x55, 0xaa]`
+    /// * `UnsupportedPartitionError` if the MBR contains a tag that the crate does not recognize
     pub fn from_bytes<T: AsRef<[u8]>>(bytes: &T) -> Result<MasterBootRecord, MbrError> {
         let buffer: &[u8] = bytes.as_ref();
         if buffer.len() < BUFFER_SIZE {
@@ -42,6 +49,14 @@ impl MasterBootRecord {
         Ok(MasterBootRecord { entries })
     }
 
+    /// Serializes this MBR partition table to a raw byte buffer. 
+    
+    /// Throws an error in the following cases:
+    /// * `BufferWrongSizeError` if `buffer.len()` is less than 512
+    /// 
+    /// Note that it only affects the partition table itself, which only appears starting
+    /// from byte `446` of the MBR; no bytes before this are affected, even though it is
+    /// still necessary to pass a full `512` byte buffer. 
     pub fn serialize<T: AsMut<[u8]>>(&self, buffer: &mut T) -> Result<usize, MbrError> {
         let buffer: &mut [u8] = buffer.as_mut();
         if buffer.len() < BUFFER_SIZE {

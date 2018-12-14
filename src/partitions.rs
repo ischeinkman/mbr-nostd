@@ -1,4 +1,5 @@
 
+/// The type of a particular partition.
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum PartitionType {
     Unused,
@@ -13,6 +14,8 @@ pub enum PartitionType {
 }
 
 impl PartitionType {
+
+    /// Parses a partition type from the type byte in the MBR's table.
     pub fn from_mbr_tag_byte(tag: u8) -> PartitionType {
         match tag {
             0x0 => PartitionType::Unused,
@@ -26,6 +29,7 @@ impl PartitionType {
         }
     }
 
+    /// Retrieves the associated type byte for this partition type.
     pub fn to_mbr_tag_byte(&self) -> u8 {
         match *self {
             PartitionType::Unused => 0,
@@ -41,10 +45,17 @@ impl PartitionType {
     }
 }
 
+/// An entry in a partition table.
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct PartitionTableEntry {
+
+    /// The type of partition in this entry.
     pub partition_type: PartitionType,
+
+    /// The index of the first block of this entry.
     pub logical_block_address: u32,
+    
+    /// The total number of blocks in this entry.
     pub sector_count: u32,
 }
 
@@ -66,7 +77,12 @@ impl PartitionTableEntry {
     }
 }
 
+/// A general trait for partition table types. 
 pub trait PartitionTable {
+
+    /// The size of the partition table itself, in bytes. 
     fn size(&self) -> usize;
+
+    /// The entries in this table.
     fn partition_table_entries(&self) -> &[PartitionTableEntry];
 }
