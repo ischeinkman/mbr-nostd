@@ -2,7 +2,7 @@
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct MbrError {
-    cause: ErrorCause,
+    pub cause: ErrorCause,
 }
 
 impl MbrError {
