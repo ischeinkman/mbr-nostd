@@ -47,9 +47,9 @@ fn to_mbr_tag_byte(ptype: PartitionType) -> u8 {
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct PartitionTableEntry {
-    partition_type: PartitionType,
-    logical_block_address: u32,
-    sector_count: u32,
+    pub partition_type: PartitionType,
+    pub logical_block_address: u32,
+    pub sector_count: u32,
 }
 
 impl PartitionTableEntry {
